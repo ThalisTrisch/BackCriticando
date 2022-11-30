@@ -48,9 +48,9 @@ app.get("/getpostagem/:id/:email", (req,res) => {
     });
 })
 
-app.post("/getstars", (req,res) => {
-    const {id} = req.body;
-    const {email} = req.body;
+app.post("/getstars/:id/:email", (req,res) => {
+    const {id} = req.params;
+    const {email} = req.params;
     const sqlpost = `select * from postagemstars where id = ${id} and email = '${email}'`;
     con.query(sqlpost, function (err, result){
         res.send(result);
@@ -115,7 +115,6 @@ app.post("/curtircomentario", (req,res) => {
     const {email} = req.body;
     const {curtidas} = req.body;
     const {posicao} = req.body;
-    console.log(curtidas)
     const updatecurtidas = `update comentario set curtidas = ${curtidas} WHERE posicao = ${posicao}`
     con.query(updatecurtidas, function (err, result){if (err) throw err});
     const curtircoment = `insert into comentariocurtidas values('${email}',${id},${posicao})`;
@@ -127,7 +126,6 @@ app.post("/descurtircomentario", (req,res) => {
     const {email} = req.body;
     const {curtidas} = req.body;
     const {posicao} = req.body;
-    console.log(curtidas)
     const updatecurtidas = `update comentario set curtidas = ${curtidas} WHERE posicao = ${posicao}`
     con.query(updatecurtidas, function (err, result){if (err) throw err});
     const curtircoment = `delete from comentariocurtidas where posicao = ${posicao} and email = '${email}'`;
@@ -145,7 +143,8 @@ app.post("/getusuario", (req,res) => {
 app.post("/getcurtido", (req,res) => {
     const {id} = req.body;
     const {email} = req.body;
-    const sqlcoment = `select * from comentariocurtidas where id = ${id} and email = '${email}'`;
+    const {posicao} = req.body;
+    const sqlcoment = `select * from comentariocurtidas where id = ${id} and email = '${email}' and posicao = ${posicao}`;
     con.query(sqlcoment, function (err, result){
         res.send(result)
     });
@@ -165,7 +164,6 @@ app.post('/criarpostagem', (req,res) => {
     const {obra} = req.body
     const {conteudo} = req.body
     const {data} = req.body
-    console.log(data)
     var id = 1;
     var sqlid = "select id from postagem where id >= (select max(id) from postagem)"
     con.query(sqlid, function (err, result) {
@@ -220,8 +218,9 @@ app.post("/deletarpostagem/:id", (req,res) => {
 app.post("/deletarcomentario", (req,res) => {
     const {id} = req.body;
     const {email} = req.body;
-    const deletelikescoment = `delete from comentariocurtidas where id = ${id} and email = '${email}'`;
-    const deletecoment = `delete from comentario where id = ${id} and email = '${email}'`;
+    const {posicao} = req.body;
+    const deletelikescoment = `delete from comentariocurtidas where id = ${id} and email = '${email}' and posicao = ${posicao}`;
+    const deletecoment = `delete from comentario where id = ${id} and email = '${email}' and posicao = ${posicao}`;
     con.query(deletelikescoment, function (err, result){});
     con.query(deletecoment, function (err, result){});
     const quantcoment = `select count(*) as quantidade from comentario where id = ${id}`;
@@ -296,7 +295,6 @@ app.post('/avaliarpostagem/:id', (req,res) => {
             const avaliacoes = resultstars[0]['avaliacoes']+1
             const soma = resultstars[0]['soma']
             media = (soma+star)/(avaliacoes);
-            console.log(avaliacoes,soma,media)
             var sqlmediastars = `update postagem set stars = ${media} where id = ${id}`;
             con.query(sqlmediastars, function (err, resultstars) {if(err) throw err});
         });
