@@ -75,6 +75,7 @@ app.get("/getteoria/:id", (req,res) => {
 
 app.get("/getcomentario/:id", (req,res) => {
     const {id} = req.params;
+    console.log("id da postagem: --->",id)
     const sqlcoment = `select * from comentario as A, usuario as B where id = ${id} and A.email = B.email`;
     con.query(sqlcoment, function (err, result){
         res.send(result);
@@ -252,8 +253,10 @@ app.post('/comentar', (req,res) => {
             if(err) throw err
             const sqlpostcoment = `update postagem set comentarios = ${quantidade[0]['quantidade']} where id = ${id}`;
             con.query(sqlpostcoment, function (err, alterar) {if(err) throw err});
+            console.log("comentario criado")
         });
     });
+
 })
 
 app.post('/inseririmagem', (req,res) => {
