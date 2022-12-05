@@ -18,6 +18,12 @@ var con = mysql.createConnection({
 });
 
 //rotas GET
+app.get("/autorizarlogin/:email", (req,res) => {
+    if(req.session.loggedin = true){
+        res.send(req.session.loggedin)
+    }
+})
+
 app.get("/getpostagens", (req,res) => {
     const sql = `select * from usuario as A, postagem as B where A.email = B.email;`;
     con.query(sql, function (err, result){
@@ -40,17 +46,15 @@ app.get("/getidpostagem", (req,res) => {
 })
 
 app.get("/getpostagem/:id/:email", (req,res) => {
-    const {id} = req.params;
-    const {email} = req.params;
+    const {id,email} = req.params;
     const sqlpost = `select * from postagem as A, usuario as B where A.id = ${id} and A.email = B.email`;
     con.query(sqlpost, function (err, result){
         res.send(result);
     });
 })
 
-app.post("/getstars/:id/:email", (req,res) => {
-    const {id} = req.params;
-    const {email} = req.params;
+app.get("/getstars/:id/:email", (req,res) => {
+    const {id,email} = req.params;
     const sqlpost = `select * from postagemstars where id = ${id} and email = '${email}'`;
     con.query(sqlpost, function (err, result){
         res.send(result);
@@ -75,7 +79,6 @@ app.get("/getteoria/:id", (req,res) => {
 
 app.get("/getcomentario/:id", (req,res) => {
     const {id} = req.params;
-    console.log("id da postagem: --->",id)
     const sqlcoment = `select * from comentario as A, usuario as B where id = ${id} and A.email = B.email`;
     con.query(sqlcoment, function (err, result){
         res.send(result);
@@ -92,9 +95,7 @@ app.get("/pesquisar/:pesquisa", (req,res) => {
 
 //rotas POST
 app.post('/autenticar', (req,res) => {
-    const {email} = req.body;
-    const {name} = req.body;
-    const {id} = req.body;
+    const {email,name} = req.body;
     req.session.loggedin = true;
     req.session.useremail = email;
     const sql = `select * from usuario where email = '${email}'`;
@@ -111,11 +112,20 @@ app.post('/autenticar', (req,res) => {
     });
 })
 
+app.post("/favoritar", (req,res) => {
+    const {id,email} = req.body;
+    const favoritar = `insert into postagemfavoritas values('${email}',${id})`;
+    con.query(favoritar, function (err, result) {if (err) throw err});
+})
+
+app.post("/desfavoritar", (req,res) => {
+    const {id,email} = req.body;
+    const favoritar = `delete from postagemfavoritas where email = '${email}' and id = ${id}`;
+    con.query(favoritar, function (err, result) {if (err) throw err});
+})
+
 app.post("/curtircomentario", (req,res) => {
-    const {id} = req.body;
-    const {email} = req.body;
-    const {curtidas} = req.body;
-    const {posicao} = req.body;
+    const {id,email,curtidas,posicao} = req.body;
     const updatecurtidas = `update comentario set curtidas = ${curtidas} WHERE posicao = ${posicao}`
     con.query(updatecurtidas, function (err, result){if (err) throw err});
     const curtircoment = `insert into comentariocurtidas values('${email}',${id},${posicao})`;
@@ -123,13 +133,10 @@ app.post("/curtircomentario", (req,res) => {
 })
 
 app.post("/descurtircomentario", (req,res) => {
-    const {id} = req.body;
-    const {email} = req.body;
-    const {curtidas} = req.body;
-    const {posicao} = req.body;
-    const updatecurtidas = `update comentario set curtidas = ${curtidas} WHERE posicao = ${posicao}`
+    const {id,email,curtidas,posicao} = req.body;
+    const updatecurtidas = `update comentario set curtidas = ${curtidas} WHERE posicao = ${posicao} and id = ${id}`
     con.query(updatecurtidas, function (err, result){if (err) throw err});
-    const curtircoment = `delete from comentariocurtidas where posicao = ${posicao} and email = '${email}'`;
+    const curtircoment = `delete from comentariocurtidas where posicao = ${posicao} and email = '${email}' and id = ${id}`;
     con.query(curtircoment, function (err, result) {if (err) throw err});
 })
 
@@ -142,10 +149,16 @@ app.post("/getusuario", (req,res) => {
 })
 
 app.post("/getcurtido", (req,res) => {
-    const {id} = req.body;
-    const {email} = req.body;
-    const {posicao} = req.body;
+    const {id,email,posicao} = req.body;
     const sqlcoment = `select * from comentariocurtidas where id = ${id} and email = '${email}' and posicao = ${posicao}`;
+    con.query(sqlcoment, function (err, result){
+        res.send(result)
+    });
+})
+
+app.post("/getfavoritos", (req,res) => {
+    const {id,email} = req.body;
+    const sqlcoment = `select * from postagemfavoritas where id = ${id} and email = '${email}' limit 1`;
     con.query(sqlcoment, function (err, result){
         res.send(result)
     });
@@ -160,11 +173,7 @@ app.post("/getpostagem/meuperfil", (req,res) => {
 })
 
 app.post('/criarpostagem', (req,res) => {
-    const {titulo} = req.body
-    const {email} = req.body
-    const {obra} = req.body
-    const {conteudo} = req.body
-    const {data} = req.body
+    const {titulo,email,obra,conteudo,data} = req.body
     var id = 1;
     var sqlid = "select id from postagem where id >= (select max(id) from postagem)"
     con.query(sqlid, function (err, result) {
@@ -180,10 +189,7 @@ app.post('/criarpostagem', (req,res) => {
 })
 
 app.post('/criarteoria', (req,res) => {
-    const {titulo} = req.body
-    const {email} = req.body
-    const {conteudo} = req.body
-    const {id} = req.body
+    const {titulo,email,conteudo,id} = req.body
     var posicao = 1;
     var sqlid = "select numero from teoria where numero >= (select max(numero) from teoria)"
     con.query(sqlid, function (err, result) {
@@ -217,13 +223,11 @@ app.post("/deletarpostagem/:id", (req,res) => {
 })
 
 app.post("/deletarcomentario", (req,res) => {
-    const {id} = req.body;
-    const {email} = req.body;
-    const {posicao} = req.body;
-    const deletelikescoment = `delete from comentariocurtidas where id = ${id} and email = '${email}' and posicao = ${posicao}`;
+    const {id,email,posicao} = req.body;
+    const deletelikescoment = `delete from comentariocurtidas where email = '${email}' and id = ${id}`;
+    con.query(deletelikescoment, function (err, result){if(err) throw err});
     const deletecoment = `delete from comentario where id = ${id} and email = '${email}' and posicao = ${posicao}`;
-    con.query(deletelikescoment, function (err, result){});
-    con.query(deletecoment, function (err, result){});
+    con.query(deletecoment, function (err, result){if(err) throw err});
     const quantcoment = `select count(*) as quantidade from comentario where id = ${id}`;
         con.query(quantcoment, function (err, quantidade) {
             if(err) throw err
@@ -239,9 +243,7 @@ app.post("/deletarfoto/:email", (req,res) => {
 })
 
 app.post('/comentar', (req,res) => {
-    const {email} = req.body
-    const {id} = req.body
-    const {comentario} = req.body
+    const {email,id,comentario} = req.body
     var posicao = 1;
     const sqlpos = `select posicao from comentario where posicao >= (select max(posicao) from comentario)`;
     con.query(sqlpos, function (err, dadosposicao) {
@@ -253,44 +255,38 @@ app.post('/comentar', (req,res) => {
             if(err) throw err
             const sqlpostcoment = `update postagem set comentarios = ${quantidade[0]['quantidade']} where id = ${id}`;
             con.query(sqlpostcoment, function (err, alterar) {if(err) throw err});
-            console.log("comentario criado")
         });
     });
 
 })
 
 app.post('/inseririmagem', (req,res) => {
-    const {imagem} = req.body
-    const {id} = req.body
+    const {imagem,id} = req.body
     var sql = `UPDATE postagem SET imagem = '${imagem}' WHERE id = ${id}`;
     con.query(sql, function (err, result) {});
 })
 
 app.post('/inserirfoto', (req,res) => {
-    const {foto} = req.body
-    const {email} = req.body
+    const {foto,email} = req.body
     var sql = `UPDATE usuario SET foto = '${foto}' WHERE email = '${email}'`;
     con.query(sql, function (err, result) {});
 })
 
 app.post('/inserirbackground', (req,res) => {
-    const {background} = req.body
-    const {id} = req.body
+    const {background,id} = req.body;
     var sql = `update postagem set bgimagem = '${background}' WHERE id = ${id}`;
     con.query(sql, function (err, result) {});
 })
 
-app.post('/avaliarpostagem/:id', (req,res) => {
-    const {email} = req.body
-    const {star} = req.body
-    const {id} = req.params
-    const sqlverif = `select * from postagemstars where email = '${email}'`;
+app.post('/avaliarpostagem', (req,res) => {
+    const {email,star,id} = req.body
+    const sqlverif = `select * from postagemstars where email = '${email}' and id = ${id}`;
     con.query(sqlverif, function (err, result) {
         if (result[0] == undefined) {
             var sql = `insert into postagemstars values('${email}',${id},${star})`;
             con.query(sql, function (err, sqlresult) {if(err) throw err});
         }else{
-            var sql = `update postagemstars set stars = ${star} WHERE email = '${email}'`;
+            var sql = `update postagemstars set stars = ${star} WHERE email = '${email}' and id = ${id}`;
             con.query(sql, function (err, sqlresult) {if(err) throw err});
         }
         var sqlpoststar = `SELECT count(*) as avaliacoes, sum(stars) as soma FROM postagemstars where id = ${id} and email != '${email}'`;
