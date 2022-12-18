@@ -174,34 +174,31 @@ app.post("/getpostagem/meuperfil", (req,res) => {
 
 app.post('/criarpostagem', (req,res) => {
     const {titulo,email,obra,conteudo,categoria,data,genero,linguagem,lancamento,obraid} = req.body
-    console.log(titulo,email,obra,conteudo,data,categoria,data,genero,lancamento,obraid)
     var id = 1;
-
     sqlverifobra = `select * from obras where obra = '${obra}';`;
     con.query(sqlverifobra, function (err, resultobra) {
         if(err) throw err;
         if (typeof resultobra[0] == 'undefined') {
-            sqlobra = `insert into obras values('${obra}','${data}','${categoria}','${linguagem}',${obraid},${id})`;
+            sqlobra = `insert into obras values('${obra}','${lancamento}','${categoria}','${linguagem}',${obraid})`;
+            console.log(sqlobra)
             con.query(sqlobra, function (err, result) {if(err) throw err;});
+            const sqlgenero = `insert into genero values('${genero[0].name}','${obra}')`;
+            con.query(sqlgenero, function (err, result) {console.log(result)});
         }
     });
     var sqlid = "select id from postagem where id >= (select max(id) from postagem)"
     con.query(sqlid, function (err, resultid) {
         if (typeof resultid[0] != "undefined") {
             id += resultid[0]['id'];
-            res.send({id:id})
         }
         sqlpost = `insert into postagem values('${email}','${titulo}','${obra}','${conteudo}','https://hospitalsantamonica.com.br/wp-content/uploads/2021/07/FILME-DE-TERROR-scaled.jpg','https://t4.ftcdn.net/jpg/03/22/45/85/360_F_322458522_fWMrqLWx59EDO1jYpMq0ACdkzv8YEYUj.jpg',0,'${data}',${id},null)`;
-        con.query(sqlpost, function (err, result) {
-            if(err) throw err;
-        });
+        con.query(sqlpost, function (err, result) {if(err) throw err;});
     });
-    genero.forEach((genero) => {
-        sqlgenero = `insert into genero values('${genero.name}','${obra}',${genero.id})`;
-        con.query(sqlgenero, function (err, result) {
-            if(err) throw err;
-        });
-    })
+    // genero.forEach((genero) => {
+    //     console.log(genero.name)
+    //     const sqlgenero = `insert into genero values('${genero.name}','${obra}')`;
+    //     con.query(sqlgenero, function (err, result) {if(err) throw err});
+    // })
 })
 
 app.post('/criarteoria', (req,res) => {
@@ -220,8 +217,8 @@ app.post('/criarteoria', (req,res) => {
     });
 })
 
-app.post("/deletarpostagem/:id", (req,res) => {
-    const {id} = req.params
+app.post("/deletarpostagem/:id/:obra", (req,res) => {
+    const {id,obra} = req.params
     const deleteteoria = `delete from teoria where id = ${id}`;
     const deletestars = `delete from postagemstars where id = ${id}`;
     const deletecomentario = `delete from comentario where id = ${id}`;
@@ -229,7 +226,6 @@ app.post("/deletarpostagem/:id", (req,res) => {
     const deletefavoritas = `delete from postagemfavoritas where id = ${id}`;
     const deleteavaliacao = `delete from avaliacaoteoria where id = ${id}`;
     const deletepostagem = `delete from postagem where id = ${id}`;
-    const deleteobras = `delete from obras where id = ${id}`;
     con.query(deleteteoria, function (err, result){});
     con.query(deletestars, function (err, result){});
     con.query(deletecomentario, function (err, result){});
@@ -237,7 +233,6 @@ app.post("/deletarpostagem/:id", (req,res) => {
     con.query(deletefavoritas, function (err, result){});
     con.query(deleteavaliacao, function (err, result){});
     con.query(deletepostagem, function (err, result){});
-    con.query(deleteobras, function (err, result){});
 })
 
 app.post("/deletarcomentario", (req,res) => {
