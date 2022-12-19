@@ -93,6 +93,27 @@ app.get("/pesquisar/:pesquisa", (req,res) => {
     });
 })
 
+app.get("/getmaiorid", (req,res) => {
+    const sql = "select posicao from comentario where posicao >= (select max(posicao) from comentario)"
+    con.query(sql, function (err, result) {
+        res.send(result[0])
+    });
+})
+
+app.get("/getmelhorespostagens", (req,res) => {
+    const sql = "select * from postagem as A, usuario as B where A.stars != 'null' and A.email = B.email ORDER BY stars desc LIMIT 3"
+    con.query(sql, function (err,result){
+        res.send(result);
+    })
+})
+
+app.get("/getmelhoresusuarios", (req,res) => {
+    const sql = "select A.nome,A.email,A.foto, count(*) as num_postagens from usuario as A,postagem as B where A.email = B.email group BY A.email order by num_postagens desc LIMIT 3"
+    con.query(sql, function (err,result){
+        res.send(result);
+    })
+})
+
 //rotas POST
 app.post('/autenticar', (req,res) => {
     const {email,name} = req.body;
