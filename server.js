@@ -116,11 +116,20 @@ app.get("/getmelhoresusuarios", (req,res) => {
 
 app.get("/getuseravaliacoes/:email/:numero", (req,res) => {
     const {email,numero} = req.params
-    const sql = `select email from avaliacoesteoria where email = '${email}' and numero = ${numero}}`
+    const sql = `select email from avaliacoesteoria where email = '${email}' and numero = ${numero}`
     con.query(sql, function (err,result){
         res.send(result);
     })
 })
+
+app.get("/getaceitacao/:numero", (req,res) => {
+    const {email,numero} = req.params
+    const sql = `select aprovada,reprovada from teoria where numero = ${numero}`
+    con.query(sql, function (err,result){
+        res.send(result);
+    })
+})
+
 
 //rotas POST
 app.post('/autenticar', (req,res) => {
@@ -143,22 +152,30 @@ app.post('/autenticar', (req,res) => {
 
 app.post('/aprovarteoria', (req,res) => {
     const {email,numero,id} = req.body;
-    const sql = `insert into avaliacoesteoria values('${email}',${numero},${id},'aprovado')`;
+    const sql = `insert into avaliacoesteoria values('${email}',${id},${numero},'aprovado')`;
     con.query(sql, function (err, result){});
+    var num = 0;
     const sqlquant = `select aprovada from teoria where numero = ${numero}`;
     con.query(sqlquant, function (err, result){
-        const sqlteoria = `update teoria set aprovada = ${result[0]+1} where numero = ${numero}`;
+        if(typeof result[0] != "undefined"){
+            num = result[0].aprovada
+        }
+        const sqlteoria = `update teoria set aprovada = ${num+1} where numero = ${numero}`;
         con.query(sqlteoria, function (err, result){});
     });
 })
 
 app.post('/reprovarteoria', (req,res) => {
     const {email,numero,id} = req.body;
-    const sql = `insert into avaliacoesteoria values('${email}',${numero},${id},'reprovado')`;
+    const sql = `insert into avaliacoesteoria values('${email}',${id},${numero},'reprovado')`;
     con.query(sql, function (err, result){});
+    var num = 0;
     const sqlquant = `select reprovada from teoria where numero = ${numero}`;
     con.query(sqlquant, function (err, result){
-        const sqlteoria = `update teoria set reprovada = ${result[0]+1} where numero = ${numero}`;
+        if(typeof result[0] != "undefined"){
+            num = result[0].reprovada
+        }
+        const sqlteoria = `update teoria set reprovada = ${num+1} where numero = ${numero}`;
         con.query(sqlteoria, function (err, result){});
     });
 })
@@ -201,7 +218,7 @@ app.post("/getcurtido", (req,res) => {
 
 app.post("/getfavoritos", (req,res) => {
     const {id,email} = req.body;
-    const sqlcoment = `select id from postagemfavoritas where id = ${id} and email = '${email}' limit 1`;
+    const sqlcoment = `select * from postagemfavoritas as A,postagem as B where B.email = '${email}' and A.email = '${email}'`;
     con.query(sqlcoment, function (err, result){
         res.send(result)
     });
