@@ -114,6 +114,14 @@ app.get("/getmelhoresusuarios", (req,res) => {
     })
 })
 
+app.get("/getuseravaliacoes/:email/:numero", (req,res) => {
+    const {email,numero} = req.params
+    const sql = `select email from avaliacoesteoria where email = '${email}' and numero = ${numero}}`
+    con.query(sql, function (err,result){
+        res.send(result);
+    })
+})
+
 //rotas POST
 app.post('/autenticar', (req,res) => {
     const {email,name} = req.body;
@@ -130,6 +138,28 @@ app.post('/autenticar', (req,res) => {
         }else{
             console.log("usuário logado:",email)
         }
+    });
+})
+
+app.post('/aprovarteoria', (req,res) => {
+    const {email,numero,id} = req.body;
+    const sql = `insert into avaliacoesteoria values('${email}',${numero},${id},'aprovado')`;
+    con.query(sql, function (err, result){});
+    const sqlquant = `select aprovada from teoria where numero = ${numero}`;
+    con.query(sqlquant, function (err, result){
+        const sqlteoria = `update teoria set aprovada = ${result[0]+1} where numero = ${numero}`;
+        con.query(sqlteoria, function (err, result){});
+    });
+})
+
+app.post('/reprovarteoria', (req,res) => {
+    const {email,numero,id} = req.body;
+    const sql = `insert into avaliacoesteoria values('${email}',${numero},${id},'reprovado')`;
+    con.query(sql, function (err, result){});
+    const sqlquant = `select reprovada from teoria where numero = ${numero}`;
+    con.query(sqlquant, function (err, result){
+        const sqlteoria = `update teoria set reprovada = ${result[0]+1} where numero = ${numero}`;
+        con.query(sqlteoria, function (err, result){});
     });
 })
 
@@ -161,14 +191,6 @@ app.post("/descurtircomentario", (req,res) => {
     con.query(curtircoment, function (err, result) {if (err) throw err});
 })
 
-app.post("/getusuario", (req,res) => {
-    const {email} = req.body
-    const sql = `select * from usuario where email = '${email}'`;
-    con.query(sql, function (err, result){
-        res.send(result);
-    });
-})
-
 app.post("/getcurtido", (req,res) => {
     const {id,email,posicao} = req.body;
     const sqlcoment = `select * from comentariocurtidas where id = ${id} and email = '${email}' and posicao = ${posicao}`;
@@ -179,7 +201,7 @@ app.post("/getcurtido", (req,res) => {
 
 app.post("/getfavoritos", (req,res) => {
     const {id,email} = req.body;
-    const sqlcoment = `select * from postagemfavoritas where id = ${id} and email = '${email}' limit 1`;
+    const sqlcoment = `select id from postagemfavoritas where id = ${id} and email = '${email}' limit 1`;
     con.query(sqlcoment, function (err, result){
         res.send(result)
     });
