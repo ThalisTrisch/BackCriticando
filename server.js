@@ -24,8 +24,22 @@ app.get("/autorizarlogin/:email", (req,res) => {
     }
 })
 
+app.get("/getgeneros", (req,res) => {
+    const sql = `select * from genero group by genero;`;
+    con.query(sql, function (err, result){
+        res.send(result);
+    });
+})
+
 app.get("/getpostagens", (req,res) => {
-    const sql = `select * from usuario as A, postagem as B where A.email = B.email;`;
+    const sql = `select * from usuario as A, postagem as B where A.email = B.email`;
+    con.query(sql, function (err, result){
+        res.send(result);
+    });
+})
+
+app.get("/getpostagensdetalhadas", (req,res) => {
+    const sql = `select * from usuario as U, postagem as P, obras as O, genero as G where U.email = P.email and P.obra = O.obra and G.obra = O.obra;`;
     con.query(sql, function (err, result){
         res.send(result);
     });
@@ -87,7 +101,7 @@ app.get("/getcomentario/:id", (req,res) => {
 
 app.get("/pesquisar/:pesquisa", (req,res) => {
     const {pesquisa} = req.params;
-    const sql = `select * from usuario as A, postagem as B where A.email = B.email and titulo like '%${pesquisa}%'`;
+    const sql = `select * from usuario as A, postagem as B where A.email = B.email and obra like '%${pesquisa}%'`;
     con.query(sql, function (err, result){
         res.send(result);
     });
