@@ -77,7 +77,7 @@ app.get("/getstars/:id/:email", (req,res) => {
 
 app.get("/getuser/:email", (req,res) => {
     const {email} = req.params;
-    const sqlpost = `select * from usuario where email = '${email}'`;
+    const sqlpost = `select * from usuario as A,redessociais as B where A.email = '${email}' and B.email = '${email}'`;
     con.query(sqlpost, function (err, result){
         res.send(result);
     });
@@ -117,20 +117,20 @@ app.get("/getmaiorid", (req,res) => {
 app.get("/getmelhorespostagens", (req,res) => {
     const sql = "select * from postagem as A, usuario as B where A.stars != 'null' and A.email = B.email ORDER BY stars desc LIMIT 3"
     con.query(sql, function (err,result){
-        res.send(result);
+        res.send(result)
     })
 })
 
 app.get("/getmelhoresusuarios", (req,res) => {
     const sql = "select A.nome,A.email,A.foto, count(*) as num_postagens from usuario as A,postagem as B where A.email = B.email group BY A.email order by num_postagens desc LIMIT 3"
     con.query(sql, function (err,result){
-        res.send(result);
+        res.send(result)
     })
 })
 
 app.get("/getuseravaliacoes/:email/:numero", (req,res) => {
     const {email,numero} = req.params
-    const sql = `select email from avaliacoesteoria where email = '${email}' and numero = ${numero}`
+    const sql = `select email from avaliacaoteoria where email = '${email}' and numero = ${numero}`
     con.query(sql, function (err,result){
         res.send(result);
     })
@@ -144,6 +144,46 @@ app.get("/getaceitacao/:numero", (req,res) => {
     })
 })
 
+app.get("/getredessociais/:email", (req,res) => {
+    const {email} = req.params
+    const sql = `select * from redessociais where email = '${email}'`
+    con.query(sql, function (err,result){
+        res.send(result)
+    })
+})
+
+app.get("/getdados/:email", (req,res) => {
+    const {email} = req.params
+    var dados = {}
+    const sqlcoment = `select count(*) as contagem from comentario where email = '${email}'`
+    con.query(sqlcoment, function (err,resultcomentario){
+        const sqlpost = `select count(*) as contagem from postagem where email = '${email}'`
+        con.query(sqlpost, function (err,resultpostagem){
+            const sqlteorias = `select count(*) as contagem from teoria where email = '${email}'`
+            con.query(sqlteorias, function (err,resultteorias){
+                const sqlseguidores = `select count(*) as contagem from seguidor where email = '${email}'`
+                con.query(sqlseguidores, function (err,resultseguidor){
+                    res.send({
+                        comentarios:resultcomentario[0].contagem,
+                        postagens:resultpostagem[0].contagem,
+                        teorias:resultteorias[0].contagem,
+                        seguidores:resultseguidor[0].contagem
+                    })
+                })
+            })
+        })
+    })
+})
+
+app.post("/getfavoritos/:email", (req,res) => {
+    const {email} = req.params;
+    const sqlfavoritos = `select * from postagemfavoritas as A, postagem as B, usuario as C where A.id = B.id and C.email = B.email and A.email = '${email}';`;
+    con.query(sqlfavoritos, function (err, result){
+        res.send(result)
+    });
+})
+
+
 
 //rotas POST
 app.post('/autenticar', (req,res) => {
@@ -152,21 +192,56 @@ app.post('/autenticar', (req,res) => {
     req.session.useremail = email;
     const sql = `select * from usuario where email = '${email}'`;
     con.query(sql, function (err, result){
-        if(result[0] == undefined){
-            const sqlinsert = `insert into usuario values('${name}','${email}','imagemusuariodefault.png')`;
-            con.query(sqlinsert, function (err, result) {
-                if(err){console.log("problema na criação de conta")};
-            });
-            console.log("Conta criada");
+        if(result){
+            if(typeof result[0] === 'undefined'){
+                const sqlinsert = `insert into usuario values('${name}','${email}','Olá, sou novo na plataforma!','imagemusuariodefault.png','perguntar')`;
+                con.query(sqlinsert, function (err, result) {
+                    if(err){console.log("problema na criação de conta")};
+                });
+                const sqlredes = `insert into redessociais values ('${email}','','','')`;
+                con.query(sqlredes, function (err, result){if(err) throw err});
+                console.log("Conta criada");
+            }else{
+                console.log("usuário logado:",email)
+            }
         }else{
-            console.log("usuário logado:",email)
+            console.log("Ocorreu algum erro")
         }
+    });
+})
+
+app.post('/editarpostagem/:id', (req,res) => {
+    const {titulo, conteudo} = req.body;
+    const {id} = req.params;
+    const sql = `update postagem set titulo = '${titulo}', conteudo = '${conteudo}' where id = ${id}`;
+    con.query(sql, function (err, result){if(err) throw err});
+})
+
+app.post('/atualizardados', (req,res) => {
+    var {email,nome,bio,instagram,facebook,twitter} = req.body;
+    const sql = `select * from usuario as A,redessociais as B where A.email = '${email}' and B.email = '${email}' limit 1`;
+    con.query(sql, function (err, result){
+        if(result){
+            if(!nome){
+                nome = result.nome
+                console.log(result.nome)
+            }
+            if(!bio){bio = result.biografia}
+            if(!instagram){instagram = result.instagram}
+            if(!facebook){facebook = result.facebook}
+            if(!twitter){twitter = result.twitter}
+        }
+        console.log(email,nome,bio,instagram,facebook,twitter)
+        const sqldados = `update usuario set nome='${nome}', biografia='${bio}' where email = '${email}'`;
+        con.query(sqldados, function (err, result){if(err) throw err});
+        const sqlredes = `update redessociais set instagram='${instagram}', facebook='${facebook}', twitter='${twitter}' where email = '${email}'`;
+        con.query(sqlredes, function (err, result){if(err) throw err});
     });
 })
 
 app.post('/aprovarteoria', (req,res) => {
     const {email,numero,id} = req.body;
-    const sql = `insert into avaliacoesteoria values('${email}',${id},${numero},'aprovado')`;
+    const sql = `insert into avaliacaoteoria values('${email}',${id},${numero},'aprovado')`;
     con.query(sql, function (err, result){});
     var num = 0;
     const sqlquant = `select aprovada from teoria where numero = ${numero}`;
@@ -181,7 +256,7 @@ app.post('/aprovarteoria', (req,res) => {
 
 app.post('/reprovarteoria', (req,res) => {
     const {email,numero,id} = req.body;
-    const sql = `insert into avaliacoesteoria values('${email}',${id},${numero},'reprovado')`;
+    const sql = `insert into avaliacaoteoria values('${email}',${id},${numero},'reprovado')`;
     con.query(sql, function (err, result){});
     var num = 0;
     const sqlquant = `select reprovada from teoria where numero = ${numero}`;
@@ -230,10 +305,10 @@ app.post("/getcurtido", (req,res) => {
     });
 })
 
-app.post("/getfavoritos", (req,res) => {
+app.post("/validarfavoritos", (req,res) => {
     const {id,email} = req.body;
-    const sqlcoment = `select * from postagemfavoritas as A,postagem as B where B.email = '${email}' and A.email = '${email}'`;
-    con.query(sqlcoment, function (err, result){
+    const sqlfavoritos = `select * from postagemfavoritas where email = '${email}' and id = ${id}`;
+    con.query(sqlfavoritos, function (err, result){
         res.send(result)
     });
 })
@@ -256,8 +331,11 @@ app.post('/criarpostagem', (req,res) => {
             sqlobra = `insert into obras values('${obra}','${lancamento}','${categoria}','${linguagem}',${obraid})`;
             console.log(sqlobra)
             con.query(sqlobra, function (err, result) {if(err) throw err;});
-            const sqlgenero = `insert into genero values('${genero[0].name}','${obra}')`;
-            con.query(sqlgenero, function (err, result) {console.log(result)});
+            const sqlgenero = '';
+            if(typeof genero[0] !== "undefined"){
+                const sqlgenero = `insert into genero values('${genero[0].name}','${obra}')`;
+                con.query(sqlgenero, function (err, result) {console.log(result)});
+            }
         }
     });
     var sqlid = "select id from postagem where id >= (select max(id) from postagem)"
@@ -265,7 +343,9 @@ app.post('/criarpostagem', (req,res) => {
         if (typeof resultid[0] != "undefined") {
             id += resultid[0]['id'];
         }
-        sqlpost = `insert into postagem values('${email}','${titulo}','${obra}','${conteudo}','https://hospitalsantamonica.com.br/wp-content/uploads/2021/07/FILME-DE-TERROR-scaled.jpg','https://t4.ftcdn.net/jpg/03/22/45/85/360_F_322458522_fWMrqLWx59EDO1jYpMq0ACdkzv8YEYUj.jpg',0,'${data}',${id},null)`;
+        const oldbackground = 'https://t4.ftcdn.net/jpg/03/22/45/85/360_F_322458522_fWMrqLWx59EDO1jYpMq0ACdkzv8YEYUj.jpg'
+        const newbackground = 'https://www.freecodecamp.org/news/content/images/2022/09/jonatan-pie-3l3RwQdHRHg-unsplash.jpg'
+        sqlpost = `insert into postagem values('${email}','${titulo}','${obra}','${conteudo}','https://hospitalsantamonica.com.br/wp-content/uploads/2021/07/FILME-DE-TERROR-scaled.jpg','https://www.freecodecamp.org/news/content/images/2022/09/jonatan-pie-3l3RwQdHRHg-unsplash.jpg',0,'${data}',${id},null)`;
         con.query(sqlpost, function (err, result) {if(err) throw err;});
     });
     // genero.forEach((genero) => {
@@ -302,11 +382,19 @@ app.post("/deletarpostagem/:id/:obra", (req,res) => {
     const deletepostagem = `delete from postagem where id = ${id}`;
     con.query(deleteteoria, function (err, result){});
     con.query(deletestars, function (err, result){});
-    con.query(deletecomentario, function (err, result){});
     con.query(deletecurtidas, function (err, result){});
+    con.query(deletecomentario, function (err, result){});
     con.query(deletefavoritas, function (err, result){});
     con.query(deleteavaliacao, function (err, result){});
     con.query(deletepostagem, function (err, result){});
+})
+
+app.post("/deletarteoria", (req,res) => {
+    const {email,numero} = req.body
+    const deleteavaliacao = `delete from avaliacaoteoria where numero = ${numero}`;
+    con.query(deleteavaliacao, function (err, result){if(err) throw err});
+    const deleteteoria = `delete from teoria where numero = ${numero} and email = '${email}'`;
+    con.query(deleteteoria, function (err, result){if(err) throw err});
 })
 
 app.post("/deletarcomentario", (req,res) => {
@@ -385,6 +473,56 @@ app.post('/avaliarpostagem', (req,res) => {
             con.query(sqlmediastars, function (err, resultstars) {if(err) throw err});
         });
     });
+})
+
+app.post('/setperguntarnovamente', (req,res) => {
+    const {email} = req.body;
+    const sql = `update usuario set veravisoteoria = 'seguir' where email = '${email}'`
+    con.query(sql, function (err, result) {if(err) throw err})
+})
+
+app.post('/seguirperfil', (req,res) => {
+    const {emailseguindo, emailseguidor} = req.body;
+    const sql = `insert into seguidor values('${emailseguindo}','${emailseguidor}')`
+    con.query(sql, function (err, result){if(err) throw err})
+})
+
+app.post('/cancelseguirperfil', (req,res) => {
+    const {emailseguindo, emailseguidor} = req.body;
+    const sql = `delete from seguidor where email = '${emailseguindo}' and emailseguidor = '${emailseguidor}'`;
+    con.query(sql, function (err, result){if(err) throw err})
+})
+
+app.post("/verifseguidor", (req,res) => {
+    const {emailseguindo,emailseguidor} = req.body;
+    const sqlfavoritos = `select * from seguidor where email = '${emailseguindo}' and emailseguidor = '${emailseguidor}'`;
+    con.query(sqlfavoritos, function (err, result){
+        res.send(result)
+    });
+})
+
+app.post("/deletarconta/:email", (req,res) => {
+    const {email} = req.params
+    const deleteteoria = `delete from teoria where email = '${email}'`;
+    const deletestars = `delete from postagemstars where id in (select id from postagem where email = '${email});`;
+    const deletecomentario = `delete from comentario where email = '${email}'`;
+    const deletecurtidas = `delete from comentariocurtidas where id in (select id from comentario where email = '${email}')`;
+    const deletefavoritas = `delete from postagemfavoritas where id in (select id from postagem where email = '${email}');`;
+    const deleteavaliacao = `delete from avaliacaoteoria where numero in (select numero from teoria where email = '${email}');`;
+    const deletepostagem = `delete from postagem where email = '${email}'`;
+    const deleteredes = `delete from redessociais where email = '${email}'`;
+    const deleteseguidor = `delete from seguidor where email = '${email}' or emailseguidor = '${email}'`;
+    const deleteuser = `delete from usuario where email = '${email}'`;
+    con.query(deleteteoria, function (err, result){});
+    con.query(deletestars, function (err, result){});
+    con.query(deletecurtidas, function (err, result){});
+    con.query(deletecomentario, function (err, result){});
+    con.query(deletefavoritas, function (err, result){});
+    con.query(deleteavaliacao, function (err, result){});
+    con.query(deletepostagem, function (err, result){});
+    con.query(deleteseguidor, function (err, result){});
+    con.query(deleteredes, function (err, result){});
+    con.query(deleteuser, function (err, result){});
 })
 
 var port = 3001;
