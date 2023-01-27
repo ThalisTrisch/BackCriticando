@@ -32,7 +32,7 @@ app.get("/getgeneros", (req,res) => {
 })
 
 app.get("/getpostagens", (req,res) => {
-    const sql = `select * from usuario as A, postagem as B where A.email = B.email`;
+    const sql = `select * from usuario as A, postagem as B where A.email = B.email limit 20`;
     con.query(sql, function (err, result){
         res.send(result);
     });
@@ -399,13 +399,13 @@ app.post("/deletarteoria", (req,res) => {
 
 app.post("/deletarcomentario", (req,res) => {
     const {id,email,posicao} = req.body;
-    const deletelikescoment = `delete from comentariocurtidas where email = '${email}' and id = ${id}`;
+    const deletelikescoment = `delete from comentariocurtidas where email = '${email}' and id = ${id} and posicao = ${posicao}`;
     con.query(deletelikescoment, function (err, result){if(err) throw err});
     const deletecoment = `delete from comentario where id = ${id} and email = '${email}' and posicao = ${posicao}`;
     con.query(deletecoment, function (err, result){if(err) throw err});
     const quantcoment = `select count(*) as quantidade from comentario where id = ${id}`;
         con.query(quantcoment, function (err, quantidade) {
-            if(err) throw err
+            if(err) throw err;
             const updatepostagem = `update postagem set comentarios = ${quantidade[0]['quantidade']} where id = ${id}`;
             con.query(updatepostagem, function (err, alterar) {if(err) throw err});
         });
@@ -477,7 +477,7 @@ app.post('/avaliarpostagem', (req,res) => {
 
 app.post('/setperguntarnovamente', (req,res) => {
     const {email} = req.body;
-    const sql = `update usuario set veravisoteoria = 'seguir' where email = '${email}'`
+    const sql = `update usuario set salateorias = 'seguir' where email = '${email}'`
     con.query(sql, function (err, result) {if(err) throw err})
 })
 
@@ -513,16 +513,16 @@ app.post("/deletarconta/:email", (req,res) => {
     const deleteredes = `delete from redessociais where email = '${email}'`;
     const deleteseguidor = `delete from seguidor where email = '${email}' or emailseguidor = '${email}'`;
     const deleteuser = `delete from usuario where email = '${email}'`;
-    con.query(deleteteoria, function (err, result){});
-    con.query(deletestars, function (err, result){});
-    con.query(deletecurtidas, function (err, result){});
-    con.query(deletecomentario, function (err, result){});
-    con.query(deletefavoritas, function (err, result){});
-    con.query(deleteavaliacao, function (err, result){});
-    con.query(deletepostagem, function (err, result){});
-    con.query(deleteseguidor, function (err, result){});
-    con.query(deleteredes, function (err, result){});
-    con.query(deleteuser, function (err, result){});
+    con.query(deleteteoria, function (err, result){if(err) throw err});
+    con.query(deletestars, function (err, result){if(err) throw err});
+    con.query(deletecurtidas, function (err, result){if(err) throw err});
+    con.query(deletecomentario, function (err, result){if(err) throw err});
+    con.query(deletefavoritas, function (err, result){if(err) throw err});
+    con.query(deleteavaliacao, function (err, result){if(err) throw err});
+    con.query(deletepostagem, function (err, result){if(err) throw err});
+    con.query(deleteseguidor, function (err, result){if(err) throw err});
+    con.query(deleteredes, function (err, result){if(err) throw err});
+    con.query(deleteuser, function (err, result){if(err) throw err});
 })
 
 var port = 3001;
