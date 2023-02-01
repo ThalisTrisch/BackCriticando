@@ -130,7 +130,7 @@ app.get("/getmelhoresusuarios", (req,res) => {
 
 app.get("/getuseravaliacoes/:email/:numero", (req,res) => {
     const {email,numero} = req.params
-    const sql = `select email from avaliacaoteoria where email = '${email}' and numero = ${numero}`
+    const sql = `select email from avaliacoesteoria where email = '${email}' and numero = ${numero}`
     con.query(sql, function (err,result){
         res.send(result);
     })
@@ -154,7 +154,6 @@ app.get("/getredessociais/:email", (req,res) => {
 
 app.get("/getdados/:email", (req,res) => {
     const {email} = req.params
-    var dados = {}
     const sqlcoment = `select count(*) as contagem from comentario where email = '${email}'`
     con.query(sqlcoment, function (err,resultcomentario){
         const sqlpost = `select count(*) as contagem from postagem where email = '${email}'`
@@ -219,29 +218,16 @@ app.post('/editarpostagem/:id', (req,res) => {
 
 app.post('/atualizardados', (req,res) => {
     var {email,nome,bio,instagram,facebook,twitter} = req.body;
-    const sql = `select * from usuario as A,redessociais as B where A.email = '${email}' and B.email = '${email}' limit 1`;
-    con.query(sql, function (err, result){
-        if(result){
-            if(!nome){
-                nome = result.nome
-                console.log(result.nome)
-            }
-            if(!bio){bio = result.biografia}
-            if(!instagram){instagram = result.instagram}
-            if(!facebook){facebook = result.facebook}
-            if(!twitter){twitter = result.twitter}
-        }
-        console.log(email,nome,bio,instagram,facebook,twitter)
-        const sqldados = `update usuario set nome='${nome}', biografia='${bio}' where email = '${email}'`;
-        con.query(sqldados, function (err, result){if(err) throw err});
-        const sqlredes = `update redessociais set instagram='${instagram}', facebook='${facebook}', twitter='${twitter}' where email = '${email}'`;
-        con.query(sqlredes, function (err, result){if(err) throw err});
-    });
+    console.log(email,nome,bio,instagram,facebook,twitter)
+    const sqldados = `update usuario set nome='${nome}', biografia='${bio}' where email = '${email}'`;
+    con.query(sqldados, function (err, result){if(err) throw err});
+    const sqlredes = `update redessociais set instagram='${instagram}', facebook='${facebook}', twitter='${twitter}' where email = '${email}'`;
+    con.query(sqlredes, function (err, result){if(err) throw err});
 })
 
 app.post('/aprovarteoria', (req,res) => {
     const {email,numero,id} = req.body;
-    const sql = `insert into avaliacaoteoria values('${email}',${id},${numero},'aprovado')`;
+    const sql = `insert into avaliacoesteoria values('${email}',${id},${numero},'aprovado')`;
     con.query(sql, function (err, result){});
     var num = 0;
     const sqlquant = `select aprovada from teoria where numero = ${numero}`;
@@ -256,7 +242,7 @@ app.post('/aprovarteoria', (req,res) => {
 
 app.post('/reprovarteoria', (req,res) => {
     const {email,numero,id} = req.body;
-    const sql = `insert into avaliacaoteoria values('${email}',${id},${numero},'reprovado')`;
+    const sql = `insert into avaliacoesteoria values('${email}',${id},${numero},'reprovado')`;
     con.query(sql, function (err, result){});
     var num = 0;
     const sqlquant = `select reprovada from teoria where numero = ${numero}`;
@@ -331,10 +317,11 @@ app.post('/criarpostagem', (req,res) => {
             sqlobra = `insert into obras values('${obra}','${lancamento}','${categoria}','${linguagem}',${obraid})`;
             console.log(sqlobra)
             con.query(sqlobra, function (err, result) {if(err) throw err;});
-            const sqlgenero = '';
-            if(typeof genero[0] !== "undefined"){
-                const sqlgenero = `insert into genero values('${genero[0].name}','${obra}')`;
-                con.query(sqlgenero, function (err, result) {console.log(result)});
+            if(genero !== undefined){
+                if(typeof genero[0] !== undefined){
+                    const sqlgenero = `insert into genero values('${genero[0].name}','${obra}')`;
+                    con.query(sqlgenero, function (err, result) {console.log(result)});
+                }
             }
         }
     });
@@ -378,7 +365,7 @@ app.post("/deletarpostagem/:id/:obra", (req,res) => {
     const deletecomentario = `delete from comentario where id = ${id}`;
     const deletecurtidas = `delete from comentariocurtidas where id = ${id}`;
     const deletefavoritas = `delete from postagemfavoritas where id = ${id}`;
-    const deleteavaliacao = `delete from avaliacaoteoria where id = ${id}`;
+    const deleteavaliacao = `delete from avaliacoesteoria where id = ${id}`;
     const deletepostagem = `delete from postagem where id = ${id}`;
     con.query(deleteteoria, function (err, result){});
     con.query(deletestars, function (err, result){});
@@ -391,7 +378,7 @@ app.post("/deletarpostagem/:id/:obra", (req,res) => {
 
 app.post("/deletarteoria", (req,res) => {
     const {email,numero} = req.body
-    const deleteavaliacao = `delete from avaliacaoteoria where numero = ${numero}`;
+    const deleteavaliacao = `delete from avaliacoesteoria where numero = ${numero}`;
     con.query(deleteavaliacao, function (err, result){if(err) throw err});
     const deleteteoria = `delete from teoria where numero = ${numero} and email = '${email}'`;
     con.query(deleteteoria, function (err, result){if(err) throw err});
@@ -482,20 +469,20 @@ app.post('/setperguntarnovamente', (req,res) => {
 })
 
 app.post('/seguirperfil', (req,res) => {
-    const {emailseguindo, emailseguidor} = req.body;
-    const sql = `insert into seguidor values('${emailseguindo}','${emailseguidor}')`
+    const {email, emailseguidor} = req.body;
+    const sql = `insert into seguidor values('${email}','${emailseguidor}')`
     con.query(sql, function (err, result){if(err) throw err})
 })
 
 app.post('/cancelseguirperfil', (req,res) => {
-    const {emailseguindo, emailseguidor} = req.body;
-    const sql = `delete from seguidor where email = '${emailseguindo}' and emailseguidor = '${emailseguidor}'`;
+    const {email, emailseguidor} = req.body;
+    const sql = `delete from seguidor where email = '${emailseguidor}' and emailseguidor = '${email}'`;
     con.query(sql, function (err, result){if(err) throw err})
 })
 
 app.post("/verifseguidor", (req,res) => {
-    const {emailseguindo,emailseguidor} = req.body;
-    const sqlfavoritos = `select * from seguidor where email = '${emailseguindo}' and emailseguidor = '${emailseguidor}'`;
+    const {email,emailseguidor} = req.body;
+    const sqlfavoritos = `select * from seguidor where email = '${email}' and emailseguidor = '${emailseguidor}'`;
     con.query(sqlfavoritos, function (err, result){
         res.send(result)
     });
@@ -503,22 +490,22 @@ app.post("/verifseguidor", (req,res) => {
 
 app.post("/deletarconta/:email", (req,res) => {
     const {email} = req.params
-    const deleteteoria = `delete from teoria where email = '${email}'`;
-    const deletestars = `delete from postagemstars where id in (select id from postagem where email = '${email});`;
+    const deleteteoria = `delete from teoria where numero in (select numero from postagem as A, teoria as B where A.id = B.id and B.email = '${email}');`;
+    const deletestars = `delete from postagemstars where id in (select id from postagem where email = '${email}');`;
     const deletecomentario = `delete from comentario where email = '${email}'`;
     const deletecurtidas = `delete from comentariocurtidas where id in (select id from comentario where email = '${email}')`;
-    const deletefavoritas = `delete from postagemfavoritas where id in (select id from postagem where email = '${email}');`;
-    const deleteavaliacao = `delete from avaliacaoteoria where numero in (select numero from teoria where email = '${email}');`;
+    const deletefavoritas = `delete from postagemfavoritas where id in (select B.id from postagem as A, postagemfavoritas as B where B.email = '${email}' and A.id = B.id)`;
+    const deleteavaliacao = `delete from avaliacoesteoria where numero in (select numero from teoria where email = '${email}');`;
     const deletepostagem = `delete from postagem where email = '${email}'`;
     const deleteredes = `delete from redessociais where email = '${email}'`;
     const deleteseguidor = `delete from seguidor where email = '${email}' or emailseguidor = '${email}'`;
     const deleteuser = `delete from usuario where email = '${email}'`;
-    con.query(deleteteoria, function (err, result){if(err) throw err});
-    con.query(deletestars, function (err, result){if(err) throw err});
-    con.query(deletecurtidas, function (err, result){if(err) throw err});
-    con.query(deletecomentario, function (err, result){if(err) throw err});
-    con.query(deletefavoritas, function (err, result){if(err) throw err});
     con.query(deleteavaliacao, function (err, result){if(err) throw err});
+    con.query(deletestars, function (err, result){if(err) throw err});
+    con.query(deletefavoritas, function (err, result){if(err) throw err});
+    con.query(deletecurtidas, function (err, result){if(err) throw err});
+    con.query(deleteteoria, function (err, result){if(err) throw err});
+    con.query(deletecomentario, function (err, result){if(err) throw err});
     con.query(deletepostagem, function (err, result){if(err) throw err});
     con.query(deleteseguidor, function (err, result){if(err) throw err});
     con.query(deleteredes, function (err, result){if(err) throw err});
