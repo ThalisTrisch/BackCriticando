@@ -265,7 +265,8 @@ app.post("/desfavoritar", (req,res) => {
 })
 
 app.post("/curtircomentario", (req,res) => {
-    const {id,email,curtidas,posicao} = req.body;
+    const {email,curtidas,posicao} = req.body;
+    console.log(posicao);
     const updatecurtidas = `update comentario set curtidas = ${curtidas} WHERE posicao = ${posicao}`
     con.query(updatecurtidas, function (err, result){if (err) throw err});
     const curtircoment = `insert into comentariocurtidas values('${email}',${posicao})`;
@@ -356,20 +357,20 @@ app.post('/criarteoria', (req,res) => {
 
 app.post("/deletarpostagem/:id/:obra", (req,res) => {
     const {id,obra} = req.params
+    const deleteavaliacao = `delete from avaliacoesteoria where id = ${id}`;
     const deleteteoria = `delete from teoria where id = ${id}`;
     const deletestars = `delete from postagemstars where id = ${id}`;
     const deletecomentario = `delete from comentario where id = ${id}`;
-    const deletecurtidas = `delete from comentariocurtidas where id = ${id}`;
+    const deletecurtidas = `delete from comentariocurtidas where posicao in (select posicao from comentario where id = ${id})`;
     const deletefavoritas = `delete from postagemfavoritas where id = ${id}`;
-    const deleteavaliacao = `delete from avaliacoesteoria where id = ${id}`;
     const deletepostagem = `delete from postagem where id = ${id}`;
-    con.query(deleteteoria, function (err, result){});
-    con.query(deletestars, function (err, result){});
-    con.query(deletecurtidas, function (err, result){});
-    con.query(deletecomentario, function (err, result){});
-    con.query(deletefavoritas, function (err, result){});
-    con.query(deleteavaliacao, function (err, result){});
-    con.query(deletepostagem, function (err, result){});
+    con.query(deleteavaliacao, function (err, result){if(err) throw err});
+    con.query(deleteteoria, function (err, result){if(err) throw err});
+    con.query(deletestars, function (err, result){if(err) throw err});
+    con.query(deletecurtidas, function (err, result){if(err) throw err});
+    con.query(deletecomentario, function (err, result){if(err) throw err});
+    con.query(deletefavoritas, function (err, result){if(err) throw err});
+    con.query(deletepostagem, function (err, result){if(err) throw err});
 })
 
 app.post("/deletarteoria", (req,res) => {
@@ -404,12 +405,13 @@ app.post('/comentar', (req,res) => {
     var posicao = 1;
     const sqlpos = `select posicao from comentario where posicao >= (select max(posicao) from comentario)`;
     con.query(sqlpos, function (err, dadosposicao) {
-        if (dadosposicao[0] != undefined) {posicao += dadosposicao[0]['posicao'];}
+        if (dadosposicao[0] != undefined) {
+            posicao += dadosposicao[0]['posicao'];
+        }
         const sqlcoment = `insert into comentario values('${comentario}','${email}',0,${id},${posicao})`;
         con.query(sqlcoment, function (err, comentar) {});
         const quantcoment = `select count(*) as quantidade from comentario where id = ${id}`;
         con.query(quantcoment, function (err, quantidade) {
-            
             const sqlpostcoment = `update postagem set comentarios = ${quantidade[0]['quantidade']} where id = ${id}`;
             con.query(sqlpostcoment, function (err, alterar) {});
         });
