@@ -182,6 +182,16 @@ app.post("/getfavoritos/:email", (req,res) => {
     });
 })
 
+app.get("/getmaiorposicao", (req,res) => {
+    var posicao = 1;
+    const sqlmaxpos = `select posicao from comentario where posicao >= (select max(posicao) from comentario)`;
+    con.query(sqlmaxpos, function (err, result){
+        if (result[0] != undefined) {
+            posicao += result[0]['posicao'];
+        }
+        res.send({posicao})
+    });
+})
 
 
 //rotas POST
@@ -401,22 +411,14 @@ app.post("/deletarfoto/:email", (req,res) => {
 })
 
 app.post('/comentar', (req,res) => {
-    const {email,id,comentario} = req.body
-    var posicao = 1;
-    const sqlpos = `select posicao from comentario where posicao >= (select max(posicao) from comentario)`;
-    con.query(sqlpos, function (err, dadosposicao) {
-        if (dadosposicao[0] != undefined) {
-            posicao += dadosposicao[0]['posicao'];
-        }
-        const sqlcoment = `insert into comentario values('${comentario}','${email}',0,${id},${posicao})`;
-        con.query(sqlcoment, function (err, comentar) {});
-        const quantcoment = `select count(*) as quantidade from comentario where id = ${id}`;
-        con.query(quantcoment, function (err, quantidade) {
-            const sqlpostcoment = `update postagem set comentarios = ${quantidade[0]['quantidade']} where id = ${id}`;
-            con.query(sqlpostcoment, function (err, alterar) {});
-        });
+    const {email,id,comentario, posicao} = req.body
+    const sqlcoment = `insert into comentario values('${comentario}','${email}',0,${id},${posicao})`;
+    con.query(sqlcoment, function (err, comentar) {});
+    const quantcoment = `select count(*) as quantidade from comentario where id = ${id}`;
+    con.query(quantcoment, function (err, quantidade) {
+        const sqlpostcoment = `update postagem set comentarios = ${quantidade[0]['quantidade']} where id = ${id}`;
+        con.query(sqlpostcoment, function (err, alterar) {});
     });
-
 })
 
 app.post('/inserirfoto', (req,res) => {
