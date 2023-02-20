@@ -489,26 +489,26 @@ app.post("/verifseguidor", (req,res) => {
 
 app.post("/deletarconta/:email", (req,res) => {
     const {email} = req.params
-    const deleteteoria = `delete from teoria where numero in (select numero from postagem as A, teoria as B where A.id = B.id and B.email = '${email}');`;
-    const deletestars = `delete from postagemstars where id in (select id from postagem where email = '${email}');`;
-    const deletecomentario = `delete from comentario where email = '${email}'`;
-    const deletecurtidas = `delete from comentariocurtidas where id in (select id from comentario where email = '${email}')`;
-    const deletefavoritas = `delete from postagemfavoritas where id in (select B.id from postagem as A, postagemfavoritas as B where B.email = '${email}' and A.id = B.id)`;
-    const deleteavaliacao = `delete from avaliacoesteoria where numero in (select numero from teoria where email = '${email}');`;
+    const deleteavaliacao = `delete from avaliacoesteoria where numero in (select numero from teoria where email = '${email}') or email = '${email}';`;
+    const deleteteoria = `delete from teoria where numero in (select numero from postagem as A, teoria as B where A.id = B.id and B.email = '${email}') or email = '${email}';`;
+    const deletestars = `delete from postagemstars where id in (select id from postagem where email = '${email}') or email = '${email}';`;
+    const deletecurtidas = `delete from comentariocurtidas where posicao in (select posicao from comentario where email = '${email}') or email = '${email}'`;
+    const deletecomentario = `delete from comentario where posicao in (select posicao from comentario where id in (select id from postagem where email = '${email}')) or email = '${email}'`;
+    const deletefavoritas = `delete from postagemfavoritas where id in (select B.id from postagem as A, postagemfavoritas as B where B.email = '${email}' and A.id = B.id) or email = '${email}'`;
     const deletepostagem = `delete from postagem where email = '${email}'`;
     const deleteredes = `delete from redessociais where email = '${email}'`;
     const deleteseguidor = `delete from seguidor where email = '${email}' or emailseguidor = '${email}'`;
     const deleteuser = `delete from usuario where email = '${email}'`;
-    con.query(deleteavaliacao, function (err, result){});
-    con.query(deletestars, function (err, result){});
-    con.query(deletefavoritas, function (err, result){});
-    con.query(deletecurtidas, function (err, result){});
-    con.query(deleteteoria, function (err, result){});
-    con.query(deletecomentario, function (err, result){});
-    con.query(deletepostagem, function (err, result){});
-    con.query(deleteseguidor, function (err, result){});
-    con.query(deleteredes, function (err, result){});
-    con.query(deleteuser, function (err, result){});
+    con.query(deleteavaliacao, function (err, result){if(err) throw err});
+    con.query(deletestars, function (err, result){if(err) throw err});
+    con.query(deletefavoritas, function (err, result){if(err) throw err});
+    con.query(deletecurtidas, function (err, result){if(err) throw err});
+    con.query(deleteteoria, function (err, result){if(err) throw err});
+    con.query(deletecomentario, function (err, result){if(err) throw err});
+    con.query(deletepostagem, function (err, result){if(err) throw err});
+    con.query(deleteseguidor, function (err, result){if(err) throw err});
+    con.query(deleteredes, function (err, result){if(err) throw err});
+    con.query(deleteuser, function (err, result){if(err) throw err});
 })
 
 var port = 3001;
