@@ -7,9 +7,13 @@ Conjunto de códigos backend da aplicação Criticando. software web disponível
 ferrementas: VSCode, Git e NodeJS.
 
 1º - crie a pasta Criticando e abra ela no VSCode.
+
 2º - abra o terminal e digite git clone https://github.com/ThalisTrisch/BackCriticando.git
+
 3º - digite no terminal cd BackCriticando
+
 4º - npm install
+
 5º - npm start
 
 Pronto! o backend da aplicação está rodando.
