@@ -1,6 +1,6 @@
 # BackCriticando
 
-Conjunto de códigos backend da aplicação Criticando. Versão não finalizada do software web.
+Conjunto de códigos backend da aplicação Criticando. software web disponível para teste.
 
 # Como ver o projeto:
 
